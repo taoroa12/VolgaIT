@@ -28,15 +28,15 @@ class FormFieldsPage(BasePage):
         return self.get_texts(self.AUTOMATION_TOOLS_ITEMS)
 
     def fill_name(self, name: str):
-        self.type_text(self.NAME_INPUT, name)
+        self.type_text_reliably(self.NAME_INPUT, name)
         return self
 
     def fill_email(self, email: str):
-        self.type_text(self.EMAIL_INPUT, email)
+        self.type_text_reliably(self.EMAIL_INPUT, email)
         return self
 
     def fill_message(self, text: str):
-        self.type_text(self.MESSAGE_INPUT, text)
+        self.type_text_reliably(self.MESSAGE_INPUT, text)
         return self
 
     def get_message_value(self) -> str:

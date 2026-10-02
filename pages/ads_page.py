@@ -11,7 +11,7 @@ from selenium.webdriver.common.by import By
 
 from pages.base_page import BasePage
 
-AD_APPEAR_TIMEOUT = 8  # the page counts down from 5, give it margin
+AD_APPEAR_TIMEOUT = 12  # the page counts down from 5, give it margin
 
 
 class AdsPage(BasePage):

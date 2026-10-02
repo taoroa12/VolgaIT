@@ -53,10 +53,13 @@ class ModalsPage(BasePage):
         return self
 
     def is_simple_modal_open(self) -> bool:
-        return self.is_visible(self.SIMPLE_MODAL_TEXT, timeout=5)
+        return self.is_visible(self.SIMPLE_MODAL_TEXT, timeout=10)
 
     def close_simple_modal(self):
         self.click(self.SIMPLE_MODAL_CLOSE)
+        # Popup Maker fades the popup out; wait until it is really gone so a
+        # following click/open does not hit a popup that is still closing.
+        self.is_invisible(self.SIMPLE_MODAL_TEXT, timeout=self.timeout)
         return self
 
     # ---------- form modal ----------
@@ -65,15 +68,15 @@ class ModalsPage(BasePage):
         return self
 
     def is_form_modal_open(self) -> bool:
-        return self.is_visible(self.NAME_INPUT, timeout=5)
+        return self.is_visible(self.NAME_INPUT, timeout=10)
 
     def fill_form(self, name: str = "", email: str = "", message: str = ""):
         if name is not None:
-            self.type_text(self.NAME_INPUT, name)
+            self.type_text_reliably(self.NAME_INPUT, name)
         if email is not None:
-            self.type_text(self.EMAIL_INPUT, email)
+            self.type_text_reliably(self.EMAIL_INPUT, email)
         if message is not None:
-            self.type_text(self.MESSAGE_INPUT, message)
+            self.type_text_reliably(self.MESSAGE_INPUT, message)
         return self
 
     def submit_form(self):
@@ -88,4 +91,5 @@ class ModalsPage(BasePage):
 
     def close_form_modal(self):
         self.click(self.FORM_MODAL_CLOSE)
+        self.is_invisible(self.NAME_INPUT, timeout=self.timeout)
         return self

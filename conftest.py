@@ -1,4 +1,5 @@
 import os
+import platform
 
 import allure
 import pytest
@@ -29,17 +30,20 @@ def driver(request):
 
     if browser == "firefox":
         options = FirefoxOptions()
+        options.page_load_strategy = "eager"
         if headless:
             options.add_argument("--headless")
         drv = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()), options=options)
     else:
         options = ChromeOptions()
+        options.page_load_strategy = "eager"  # don't wait for ads/analytics: slow networks made get() hang
         if headless:
             options.add_argument("--headless=new")
         options.add_argument("--window-size=1400,1000")
         options.add_argument("--disable-notifications")
         drv = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()), options=options)
 
+    drv.set_page_load_timeout(60)
     drv.implicitly_wait(0)  # explicit waits only, see pages/base_page.py
     drv.maximize_window()
     yield drv
@@ -62,3 +66,20 @@ def pytest_runtest_makereport(item, call):
                 )
             except Exception:
                 pass
+
+
+def pytest_sessionfinish(session, exitstatus):
+    """Fill the 'Environment' block of the Allure report."""
+    results_dir = getattr(session.config.option, "allure_report_dir", None)
+    if not results_dir:
+        return
+    os.makedirs(results_dir, exist_ok=True)
+    lines = [
+        f"Browser={session.config.getoption('--browser')}",
+        f"Headless={session.config.getoption('--headless')}",
+        f"Python={platform.python_version()}",
+        f"OS={platform.system()} {platform.release()}",
+        "Base_URL=https://practice-automation.com/",
+    ]
+    with open(os.path.join(results_dir, "environment.properties"), "w", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")

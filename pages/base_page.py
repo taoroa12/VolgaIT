@@ -12,7 +12,7 @@ from selenium.common.exceptions import (
     ElementClickInterceptedException,
 )
 
-DEFAULT_TIMEOUT = 10
+DEFAULT_TIMEOUT = 20
 
 
 class BasePage:
@@ -27,8 +27,22 @@ class BasePage:
 
     # ---------- navigation ----------
     def open(self):
-        self.driver.get(self.URL)
+        try:
+            self.driver.get(self.URL)
+        except TimeoutException:
+            # Slow network: the page is usually already usable, stop the rest of the loading
+            self.driver.execute_script("window.stop();")
+        self._wait_until_loaded()
         return self
+
+    def _wait_until_loaded(self, timeout: int = 20):
+        """Let the page scripts (popups, forms) finish initialising; never fails the test."""
+        try:
+            WebDriverWait(self.driver, timeout).until(
+                lambda d: d.execute_script("return document.readyState") == "complete"
+            )
+        except TimeoutException:
+            pass
 
     # ---------- element access ----------
     def find(self, locator: tuple[str, str]) -> WebElement:
@@ -47,7 +61,12 @@ class BasePage:
     # ---------- actions ----------
     def click(self, locator: tuple[str, str]):
         try:
-            self.find_clickable(locator).click()
+            try:
+                self.find_clickable(locator).click()
+            except TimeoutException:
+                # slow network: let the page finish loading and try once more
+                self._wait_until_loaded()
+                self.find_clickable(locator).click()
         except ElementClickInterceptedException:
             # fall back to a JS click, e.g. when an overlay/animation is in the way
             el = self.find(locator)
@@ -58,6 +77,29 @@ class BasePage:
         if clear_first:
             el.clear()
         el.send_keys(text)
+
+    def type_text_reliably(self, locator: tuple[str, str], text: str):
+        """Type into a field of the site's reactive form and make sure the text stays there.
+
+        The form's own JS re-writes the field value on every input event, so a long
+        text typed at once can get cut. If that happens, set the value through JS and
+        fire the 'input' event so the page state is updated as well.
+        """
+        el = self.find_visible(locator)
+        el.clear()
+        el.send_keys(text)
+        try:
+            WebDriverWait(self.driver, 2).until(lambda d: el.get_attribute("value") == text)
+            return
+        except TimeoutException:
+            pass
+        self.driver.execute_script(
+            "const el = arguments[0]; el.value = arguments[1];"
+            "el.dispatchEvent(new Event('input', {bubbles: true}));"
+            "el.dispatchEvent(new Event('change', {bubbles: true}));",
+            el,
+            text,
+        )
 
     def get_text(self, locator: tuple[str, str]) -> str:
         return self.find_visible(locator).text.strip()
