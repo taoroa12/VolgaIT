@@ -65,7 +65,7 @@ python -m pytest tests/test_calendars.py # один файл
 
 ## Отчёт Allure
 
-Результаты пишутся в `allure-results` автоматически (см. `pytest.ini`). Чтобы открыть отчёт, нужен Allure Commandline (`npm install -g allure-commandline`, нужен Node.js, либо `scoop install allure` на Windows):
+Результаты пишутся в `allure-results` автоматически (см. `pytest.ini`). Чтобы открыть отчёт, нужен Allure Commandline (`npm install -g allure-commandline`, нужны Node.js и Java, либо `scoop install allure` на Windows):
 
 ```bash
 allure serve allure-results
